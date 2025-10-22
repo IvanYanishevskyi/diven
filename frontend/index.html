@@ -1,0 +1,980 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <title>Diven</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@1.3.0"></script>
+<link rel="stylesheet" href="styles.css">
+<script>
+(async () => {
+  try {
+    const res = await fetch("https://ipapi.co/json/");
+    const data = await res.json();
+
+    if (data.country_code !== "UA") {
+      window.location.href = "/index_eng.html";
+    }
+  } catch (e) {
+    console.warn("IP check failed:", e);
+  }
+})();
+</script>
+  <meta name="description" content="Diven перетворює ваші таблиці на практичні інсайти. Завантажте дані, ставте запитання простою мовою, отримуйте миттєві візуалізації та аналіз." />
+  
+</head>
+<body>
+  <!-- Кнопка скидання демо -->
+  <button class="reset-demo" onclick="localStorage.removeItem('DATAMIND_DEMO_USED'); location.reload();" title="Скинути ліміт демо">Скинути демо</button>
+
+  <!-- Хедер -->
+  <header class="header">
+    <div class="container">
+      <nav class="nav">
+        <div class="logo">
+          <span>Diven</span>
+        </div>
+        <div class="nav-links">
+          <a href="#features" class="nav-link">Можливості</a>
+          <a href="#demo" class="nav-link">Демо</a>
+          <a href="#waitlist" class="nav-link">Ранній доступ</a>
+          <a href="#en" class="nav-link lang-switch" data-lang="en">EN</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Герой-секція -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-badge">
+        <div class="dot"></div>
+        Доступна рання версія
+      </div>
+      
+      <h1>Запитуйте свої дані про що завгодно.</h1>
+      
+      <p class="subtitle">
+        Перетворюйте електронні таблиці на інсайти за допомогою ШІ. Завантажте дані, поставте запитання простою мовою — і миттєво отримайте візуалізації та аналіз.
+      </p>
+      
+      <div class="hero-cta">
+        <a href="#waitlist" class="btn btn-primary">
+          Отримати ранній доступ
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8.22 2.97a.75.75 0 0 1 1.06 0L14 7.69a.75.75 0 0 1 0 1.06L9.28 13.47a.75.75 0 0 1-1.06-1.06L11.94 8.5H2.75a.75.75 0 0 1 0-1.5h9.19L8.22 4.03a.75.75 0 0 1 0-1.06Z"/>
+          </svg>
+        </a>
+        <a href="#demo" class="btn btn-secondary">
+          Спробувати демо
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Демо-секція -->
+  <section id="demo" class="demo-section">
+    <div class="container">
+      <div class="demo-card">
+        <div class="demo-header">
+          <div class="demo-title">
+            Демо в реальному часі
+            <div class="status-badge">1 безкоштовний аналіз</div>
+          </div>
+        </div>
+        
+        <p style="color: var(--muted); margin-bottom: 24px;">
+          Завантажте файл CSV або XLSX і поставте запитання про ваші дані. Отримайте миттєві інсайти та візуалізації.
+        </p>
+        
+        <form class="demo-form" id="demoForm">
+<div class="form-group" style="position: relative;">
+  <input type="file" accept=".csv,.xlsx,.xls" id="dataFile" class="visually-hidden-input" required>
+
+  <label for="dataFile" class="file-drop" id="fileDrop">
+    <div class="file-label">
+      <div class="file-title" id="fileLabel">Завантажте файл</div>
+    </div>
+    <button type="button" class="file-trigger" id="fileBrowseBtn">Обрати файл</button>
+  </label>
+</div>
+          <div  styles="height:250">
+            <input type="text" placeholder="наприклад, Показати топ-5 продуктів за доходом як стовпчикову діаграму" class="form-input" id="questionInput" required>
+          </div>
+          <button type="submit" class="btn btn-primary" id="analyzeBtn">
+            Проаналізувати дані
+          </button>
+        </form>
+        
+        <div class="demo-example">
+          Спробуйте запит: <code>Порівняти помісячні продажі за регіонами у 2024</code> або <code>Показати сегменти клієнтів за доходом (кругова діаграма)</code>
+        </div>
+        
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+        <div id="successMessage" class="success-message" style="display: none;"></div>
+        
+        <div class="results" id="resultsContainer">
+          <!-- ЛІВА ПАНЕЛЬ -->
+          <div class="result-panel">
+            <div class="result-title">Підсумок</div>
+
+            <div class="kpi-grid" id="kpiGrid"></div>
+            <div class="mini-sep"></div>
+
+            <div class="mini-meta">
+              <div><span class="mini-label">Запитання:</span> <span id="sumQuestion">—</span></div>
+              <div><span class="mini-label">Набір даних:</span> <span id="sumDataset">—</span></div>
+            </div>
+
+            <div class="mini-sep"></div>
+
+            <div class="highlights">
+              <div class="hl-title">Основне</div>
+              <ul id="hlList" class="hl-list"></ul>
+            </div>
+
+            <details style="margin-top:16px;">
+              <summary style="cursor:pointer; color: var(--accent);">Технічні подробиці</summary>
+              <div class="result-title" style="margin-top: 12px; font-size: 14px;">Згенерований код:</div>
+              <div class="code-block" id="generatedCode"></div>
+              <div class="result-title" style="font-size: 14px;">Аналіз:</div>
+              <div class="code-block" id="explanation"></div>
+            </details>
+          </div>
+
+          <!-- ПРАВА ПАНЕЛЬ -->
+          <div class="result-panel">
+            <div class="result-title">Візуалізація</div>
+            <div class="chart-container">
+              <div class="chart-wrap">
+                <canvas id="chartCanvas"></canvas>
+                <img id="chartImage" class="chart-image" alt="Згенерований графік" style="display:none;">
+                <div id="chartPlaceholder" style="color: var(--muted); display: none;">Графік з’явиться тут</div>
+              </div>
+            </div>
+
+            <div class="vis-toolbar">
+              <button class="btn btn-secondary btn-sm" id="btnDownload">Зберегти PNG</button>
+            </div>
+            <div class="usage-indicator" id="usageStatus"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Блок із можливостями -->
+  <section id="features" class="features">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Потужна аналітика на ШІ</h2>
+        <p class="section-subtitle">
+          Перетворюйте складний аналіз даних на просту розмову. Без SQL і складних формул — лише природна мова.
+        </p>
+      </div>
+      
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🧠</div>
+          <h3 class="feature-title">Обробка природної мови</h3>
+          <p class="feature-description">
+            Ставте запитання простою мовою. Наш ШІ розуміє контекст, зв’язки та наміри, щоб надати точний аналіз.
+          </p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3 class="feature-title">Миттєві візуалізації</h3>
+          <p class="feature-description">
+            Автоматично генеруйте красиві графіки та діаграми: стовпчикові, лінійні, кругові, гістограми — оптимізовані під ваші дані.
+          </p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">🔒</div>
+          <h3 class="feature-title">Безпечно та приватно</h3>
+          <p class="feature-description">
+            Ваші дані обробляються без постійного зберігання. Незабаром — локальний режим для максимальної приватності.
+          </p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3 class="feature-title">Блискавично швидко</h3>
+          <p class="feature-description">
+            Отримуйте інсайти за секунди, а не години. Наш оптимізований рушій миттєво обробляє дані та формує результати.
+          </p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">🎯</div>
+          <h3 class="feature-title">Розумні інсайти</h3>
+          <p class="feature-description">
+            Автоматично виявляйте патерни, тренди та аномалії. Отримуйте практичні висновки для кращих рішень.
+          </p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">📤</div>
+          <h3 class="feature-title">Експортуйте все</h3>
+          <p class="feature-description">
+            Завантажуйте графіки як PNG, експортуйте результати як CSV або генеруйте PDF-звіти. Інсайти — у зручному форматі.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Секція списку очікування -->
+  <section id="waitlist">
+    <div class="container">
+      <div class="waitlist">
+        <h3>Отримайте ранній доступ</h3>
+        <p>Будьте серед перших, хто спробує майбутнє аналітики даних. Долучайтеся до списку очікування й отримуйте ексклюзивний доступ.</p>
+        
+        <form class="waitlist-form" id="waitlistForm">
+          <div class="form-group">
+            <input type="text" placeholder="Ім’я" class="form-input" id="firstNameInput" required>
+          </div>
+          <div class="form-group">
+            <input type="text" placeholder="Прізвище" class="form-input" id="lastNameInput" required>
+          </div>
+          <div class="form-group form-row-full">
+            <input type="email" placeholder="Електронна пошта" class="form-input" id="emailInput" required>
+          </div>
+          <div class="form-group form-row-full">
+            <input type="text" placeholder="Повідомлення (необов’язково)" class="form-input" id="companyInput" >
+          </div>
+          <div class="form-row-full submit-row">
+            <button type="submit" class="btn btn-primary submit-btn" id="joinBtn">Приєднатися до списку</button>
+          </div>
+          
+          <!-- Пастка для ботів -->
+          <input type="text" name="_hp" class="sr-only" tabindex="-1" autocomplete="off">
+        </form>
+        
+        <div id="waitlistSuccess" class="success-message" style="display: none; margin-top: 16px;">
+          ✅ Ви у списку! Ми повідомимо, коли відкриється ранній доступ.
+        </div>
+        <div id="waitlistError" class="error-message" style="display: none; margin-top: 16px;"></div>
+        
+        <p style="font-size: 14px; color: var(--muted); margin-top: 24px;">
+          Лише важливі оновлення про бета-версію. Можна відписатися будь-коли.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Футер -->
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2025 Diven </p>
+    </div>
+  </footer>
+
+<script>
+const FORMSPREE_ENDPOINT = "https://formspree.io/f/mqadkgnp";
+const API_BASE = localStorage.getItem('DATAMIND_API') || ' https://stickers-up-hydrocodone-runs.trycloudflare.com';
+const USAGE_KEY = "DATAMIND_DEMO_USED";
+
+let currentChart = null;
+let currentData = null;
+
+// Реєструємо плагін
+if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
+  Chart.register(ChartDataLabels);
+}
+
+// Утиліти
+function showError(element, message) {
+  if (element) {
+    element.textContent = message;
+    element.style.display = 'block';
+  }
+}
+
+function showSuccess(element, message) {
+  if (element) {
+    element.textContent = message;
+    element.style.display = 'block';
+  }
+}
+document.addEventListener("DOMContentLoaded", () => {
+  const langLinks = document.querySelectorAll(".lang-switch");
+
+  langLinks.forEach(link => {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+
+      const lang = link.dataset.lang; // "ua" или "en"
+      
+      // Сохраняем выбранный язык в localStorage
+      localStorage.setItem("langOverride", lang);
+
+      // Перенаправляем на нужную страницу
+      if (lang === "ua") {
+        window.location.href = "/index.html";
+      } else {
+        window.location.href = "/index_eng.html";
+      }
+    });
+  });
+});
+function hideMessage(element) {
+  if (element) element.style.display = 'none';
+}
+
+// Рендеринг графіка
+function renderChart(cfg) {
+  const ctx = document.getElementById('chartCanvas').getContext('2d');
+  const chartImg = document.getElementById('chartImage');
+  chartImg.style.display = 'none';
+
+ if (currentChart) {
+    currentChart.destroy();
+    currentChart = null;
+  }
+
+  const isPie = (cfg.type === 'pie' || cfg.type === 'doughnut');
+  const isHeatmap = cfg.type === 'heatmap';
+  const plugins = [ChartDataLabels];
+
+  // Якщо потрібно побудувати теплову карту
+  if (isHeatmap) {
+    currentChart = new Chart(ctx, {
+      type: 'matrix',
+      data: {
+        datasets: [{
+          label: cfg.title || 'Теплова карта',
+          data: cfg.data, // [{x, y, v}]
+          backgroundColor: ctx => {
+            const value = ctx.dataset.data[ctx.dataIndex].v;
+            const max = cfg.maxValue || 1;
+            const alpha = Math.min(1, value / max);
+            return `rgba(59, 130, 246, ${alpha})`;
+          },
+          width: ({chart}) => (chart.chartArea.width / cfg.xLabels.length) - 2,
+          height: ({chart}) => (chart.chartArea.height / cfg.yLabels.length) - 2,
+          borderWidth: 1,
+          borderColor: '#222'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: ctx => `Місяць: ${cfg.xLabels[ctx[0].dataIndex % cfg.xLabels.length]}`,
+              label: ctx => `Дохід: ${ctx.dataset.data[ctx.dataIndex].v.toFixed(2)}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            labels: cfg.xLabels,
+            offset: true,
+            grid: { display: false },
+            ticks: { color: '#ccc', font: { size: 12 } }
+          },
+          y: {
+            labels: cfg.yLabels,
+            offset: true,
+            grid: { display: false },
+            ticks: { color: '#ccc', font: { size: 12 } }
+          }
+        }
+      }
+    });
+    return;
+  }
+
+  // Інші графіки (bar, pie, line)
+  currentChart = new Chart(ctx, {
+    type: cfg.type || 'bar',
+    data: {
+      labels: cfg.labels || [],
+      datasets: (cfg.datasets || []).map(ds => ({
+        ...ds,
+        borderWidth: 1
+      }))
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 12 } },
+        title: { display: !!cfg.title, text: cfg.title },
+        datalabels: isPie ? {
+          formatter: (v, ctx) => {
+            const ds = ctx.chart.data.datasets[0];
+            const sum = ds.data.reduce((a, b) => a + b, 0) || 1;
+            const pct = Math.round((v / sum) * 100);
+            return pct >= 5 ? pct + '%' : '';
+          },
+          anchor: 'center',
+          align: 'center'
+        } : { display: false }
+      },
+      scales: isPie ? {} : {
+        x: { grid: { color: 'rgba(255,255,255,0.06)' } },
+        y: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { beginAtZero: true } }
+      }
+    },
+    plugins
+  });
+}
+
+function showChartFallback() {
+  const canvas = document.getElementById('chartCanvas');
+  const chartImage = document.getElementById('chartImage');
+  const placeholder = document.getElementById('chartPlaceholder');
+
+  if (canvas) canvas.style.display = 'none';
+  
+  if (currentData && currentData.chart_png_base64 && chartImage) {
+    chartImage.src = `data:image/png;base64,${currentData.chart_png_base64}`;
+    chartImage.style.display = 'block';
+    if (placeholder) placeholder.style.display = 'none';
+  } else if (placeholder) {
+    placeholder.style.display = 'block';
+    if (chartImage) chartImage.style.display = 'none';
+  }
+}
+
+function setupChartButtons(config) {
+  const downloadBtn = document.getElementById('btnDownload');
+  const typeBtn = document.getElementById('btnType');
+
+  if (downloadBtn) {
+    downloadBtn.onclick = () => {
+      if (currentChart) {
+        const url = currentChart.toBase64Image('image/png', 1.0);
+        const link = document.createElement('a');
+        link.download = `${config.title || 'chart'}.png`;
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else if (currentData && currentData.chart_png_base64) {
+        const link = document.createElement('a');
+        link.download = 'chart.png';
+        link.href = `data:image/png;base64,${currentData.chart_png_base64}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    };
+  }
+
+  if (typeBtn) {
+    typeBtn.onclick = () => {
+      if (!currentChart) return;
+      
+      const currentType = currentChart.config.type;
+      const newType = currentType === 'bar' ? 'pie' : 'bar';
+      
+      currentChart.config.type = newType;
+      
+      const isPie = newType === 'pie' || newType === 'doughnut';
+      currentChart.options.plugins.datalabels.display = isPie;
+      currentChart.options.scales = isPie ? {} : {
+        x: {
+          ticks: { color: '#94a3b8' },
+          grid: { color: 'rgba(255, 255, 255, 0.1)' }
+        },
+        y: {
+          ticks: { color: '#94a3b8', beginAtZero: true },
+          grid: { color: 'rgba(255, 255, 255, 0.1)' }
+        }
+      };
+      
+      currentChart.update();
+    };
+  }
+}
+
+// Відображення результатів
+function displayResults(data) {
+  currentData = data;
+    let chartTitle = data.chart_js?.title || data.intent || 'Візуалізація даних';
+
+  const sumQuestion = document.getElementById('sumQuestion');
+  const sumDataset = document.getElementById('sumDataset');
+  
+  if (sumQuestion) sumQuestion.textContent = data.question || 'Не вказано';
+  if (sumDataset) {
+    const rows = data.summary?.dataset?.rows || data.rows || '?';
+    const cols = data.summary?.dataset?.cols_count || data.cols?.length || '?';
+    sumDataset.textContent = `${rows} рядків • ${cols} стовпців`;
+  }
+if (data.chart_js && data.chart_js.labels && data.chart_js.datasets) {
+  renderChart({
+    type: data.chart_js.type || 'bar',
+    labels: data.chart_js.labels,
+    datasets: data.chart_js.datasets,
+    title: chartTitle
+  });
+  setupChartButtons({ title: chartTitle });   // <<< ВАЖНО
+} else if (data.chart_png_base64) {
+  showChartFallback();
+  setupChartButtons({ title: chartTitle });   // <<< и тут тоже
+}
+  // KPI
+  const kpiGrid = document.getElementById('kpiGrid');
+  if (kpiGrid) {
+    kpiGrid.innerHTML = '';
+    const kpis = data.summary?.kpis || [];
+    
+    if (kpis.length > 0) {
+      kpis.forEach(kpi => {
+        const kpiEl = document.createElement('div');
+        kpiEl.className = 'kpi-card';
+        kpiEl.innerHTML = `
+          <div class="kpi-label">${kpi.label || 'Показник'}</div>
+          <div class="kpi-value">${kpi.value || 'N/A'}</div>
+          ${kpi.sub ? `<div class="kpi-sub">${kpi.sub}</div>` : ''}
+        `;
+        kpiGrid.appendChild(kpiEl);
+      });
+    } else {
+      const kpiEl = document.createElement('div');
+      kpiEl.className = 'kpi-card';
+      kpiEl.innerHTML = `
+        <div class="kpi-label">Статус</div>
+        <div class="kpi-value">Завершено</div>
+        <div class="kpi-sub">Аналіз виконано</div>
+      `;
+      kpiGrid.appendChild(kpiEl);
+    }
+  }
+
+  // Основні моменти
+  const hlList = document.getElementById('hlList');
+  if (hlList) {
+    hlList.innerHTML = '';
+    const highlights = data.summary?.highlights || [];
+    
+    if (highlights.length > 0) {
+      highlights.forEach(highlight => {
+        const li = document.createElement('li');
+        li.textContent = highlight;
+        hlList.appendChild(li);
+      });
+    } else {
+      const li = document.createElement('li');
+      li.textContent = 'Аналіз успішно виконано';
+      hlList.appendChild(li);
+    }
+  }
+
+  // Код і пояснення
+  const generatedCode = document.getElementById('generatedCode');
+  const explanation = document.getElementById('explanation');
+  
+  if (generatedCode) {
+    generatedCode.textContent = data.pandas_code || '# Код не згенеровано';
+  }
+  
+  if (explanation) {
+    const explanationText = [
+      data.intent ? `Намір: ${data.intent}` : '',
+      data.reasoning ? `Міркування: ${data.reasoning}` : '',
+      data.answer_hint ? `Інсайти: ${data.answer_hint}` : ''
+    ].filter(Boolean).join('\n\n') || 'Аналіз виконано';
+    
+    explanation.textContent = explanationText;
+  }
+
+  // Рендеримо графік
+  if (data.chart_js && data.chart_js.labels && data.chart_js.datasets) {
+    renderChart({
+      type: data.chart_js.type || 'bar',
+      labels: data.chart_js.labels,
+      datasets: data.chart_js.datasets,
+      title: data.chart_js.title || data.intent || 'Візуалізація даних'
+    });
+  } else if (data.chart_png_base64) {
+    showChartFallback();
+  }
+
+  // Показуємо результати
+  const resultsContainer = document.getElementById('resultsContainer');
+  if (resultsContainer) {
+    resultsContainer.style.display = 'grid';
+  }
+}
+const fileInput = document.getElementById('dataFile');
+const fileLabel = document.getElementById('fileLabel');
+const fileBrowseBtn = document.getElementById('fileBrowseBtn');
+
+function truncateFileName(name, maxLength = 25) {
+  if (name.length <= maxLength) return name;
+  const ext = name.split('.').pop();
+  const base = name.substring(0, maxLength - ext.length - 3);
+  return `${base}...${ext}`;
+}
+
+if (fileInput) {
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+
+    if (file) {
+      // Меняем текст кнопки
+      fileBrowseBtn.textContent = 'Файл завантажено';
+      fileBrowseBtn.classList.add('loaded');
+
+      // Обновляем лейбл на имя файла
+      fileLabel.textContent = truncateFileName(file.name);
+    } else {
+      // Если файл убрали — откатываем обратно
+      fileBrowseBtn.textContent = 'Обрати файл';
+      fileBrowseBtn.classList.remove('loaded');
+      fileLabel.textContent = 'Завантажте файл';
+    }
+  });
+}
+// Перевірка ліміту використання
+function checkUsageLimit() {
+  if (localStorage.getItem(USAGE_KEY) === "1") {
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const usageStatus = document.getElementById('usageStatus');
+    
+    if (analyzeBtn) {
+      analyzeBtn.disabled = true;
+      analyzeBtn.textContent = "Демо використано";
+    }
+    
+    if (usageStatus) {
+      usageStatus.textContent = "Ліміт демо досягнуто (1/1). Скористайтесь кнопкою «Скинути демо».";
+    }
+    
+    return true;
+  }
+  return false;
+}
+
+// Виклик API
+async function callAnalyzeAPI(file, question) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('question', question);
+
+  const response = await fetch(`${API_BASE}/analyze`, {
+    method: 'POST',
+    body: formData
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => 'Невідома помилка');
+    throw new Error(`Помилка API (${response.status}): ${errorText}`);
+  }
+
+  const data = await response.json();
+
+  if (data.ok === false) {
+    throw new Error(data.error || 'Не вдалося виконати аналіз');
+  }
+
+  return data;
+}
+
+// Аналіз даних
+async function analyzeData(file, question) {
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  const errorMsg = document.getElementById('errorMessage');
+  const successMsg = document.getElementById('successMessage');
+
+  hideMessage(errorMsg);
+  hideMessage(successMsg);
+
+  if (!file) {
+    showError(errorMsg, 'Будь ласка, виберіть файл');
+    return;
+  }
+
+  if (!question.trim()) {
+    showError(errorMsg, 'Будь ласка, введіть запитання');
+    return;
+  }
+
+  if (analyzeBtn) {
+    analyzeBtn.disabled = true;
+    analyzeBtn.textContent = 'Аналізую...';
+  }
+
+  try {
+    const data = await callAnalyzeAPI(file, question.trim());
+    localizeResponse(data);
+    displayResults(data);
+    showSuccess(successMsg, 'Аналіз успішно завершено!');
+    
+    localStorage.setItem(USAGE_KEY, "1");
+    const usageStatus = document.getElementById('usageStatus');
+    if (usageStatus) {
+      usageStatus.textContent = "Демо використано (1/1). Щоб спробувати ще раз, натисніть «Скинути демо».";
+    }
+
+  } catch (error) {
+    showError(errorMsg, error.message || 'Не вдалося виконати аналіз. Спробуйте ще раз.');
+    
+    if (analyzeBtn) {
+      analyzeBtn.disabled = false;
+      analyzeBtn.textContent = 'Проаналізувати дані';
+    }
+  }
+}
+// ===== I18N LITE =====
+const LOCALE = 'uk'; // 'uk' | 'ru' | 'en'
+const DICT = {
+  uk: {
+    // KPI labels
+    'Top': 'Топ',
+    'Low': 'Найнижчий',
+    'Average': 'Середнє',
+    'Total': 'Сума',
+    // Highlights prefixes
+    '^Dominant:': 'Лідер:',
+    '^Weakest:': 'Найслабший:',
+    // generic
+    'Metric': 'Показник',
+    'Status': 'Статус',
+    'Complete': 'Завершено',
+    'Analysis finished': 'Аналіз завершено'
+  },
+  ru: {
+    'Top': 'Топ',
+    'Low': 'Минимум',
+    'Average': 'Среднее',
+    'Total': 'Сумма',
+    '^Dominant:': 'Лидер:',
+    '^Weakest:': 'Слабейший:',
+    'Metric': 'Показатель',
+    'Status': 'Статус',
+    'Complete': 'Готово',
+    'Analysis finished': 'Анализ завершён'
+  }
+};
+
+const nf = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 2 });
+
+function tWord(s) {
+  const dict = DICT[LOCALE] || {};
+  if (!s) return s;
+  // Сначала префиксные замены (regex-ключи начинаются с ^)
+  for (const [k, v] of Object.entries(dict)) {
+    if (k.startsWith('^')) {
+      const re = new RegExp(k, 'i');
+      if (re.test(s)) return s.replace(re, v);
+    }
+  }
+  // Точное совпадение
+  return dict[s] || s;
+}
+
+// Перевод KPI и хайлайтов в объекте ответа
+function localizeResponse(data) {
+  // KPI
+  const kpis = data?.summary?.kpis;
+  if (Array.isArray(kpis)) {
+    kpis.forEach(k => {
+      if (k.label) k.label = tWord(k.label);
+      // Переформатируем числа локально (если это строка с числом)
+      if (typeof k.value === 'string' && !isNaN(Number(k.value.replace(/[, ]/g,'')))) {
+        const num = Number(k.value.replace(/[, ]/g,''));
+        k.value = nf.format(num);
+      }
+      if (typeof k.sub === 'string') {
+        // Пробуем вытащить число в формате "col: 12,345.67"
+        const m = k.sub.match(/^(.*?:)\s*([0-9.,\s]+)$/);
+        if (m) k.sub = `${m[1]} ${nf.format(Number(m[2].replace(/[, ]/g,'')))}`
+      }
+    });
+  }
+
+  // Highlights
+  const hl = data?.summary?.highlights;
+  if (Array.isArray(hl)) {
+    data.summary.highlights = hl.map(line => tWord(line));
+  }
+
+  // Фолбэк для случаев без summary
+  if (!data.summary) data.summary = {};
+  return data;
+}
+// Надсилання форми списку очікування
+async function submitWaitlist(formData) {
+  const form = new FormData();
+  Object.entries(formData).forEach(([key, value]) => {
+    form.append(key, value);
+  });
+  form.append('timestamp', new Date().toISOString());
+  form.append('source', 'datamind_landing');
+
+  const response = await fetch(FORMSPREE_ENDPOINT, {
+    method: 'POST',
+    body: form,
+    headers: { 'Accept': 'application/json' }
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `Не вдалося надіслати (${response.status})`);
+  }
+
+  return response.json();
+}
+
+// Обробники подій
+document.addEventListener('DOMContentLoaded', function() {
+  // Перевіряємо ліміт використання
+  checkUsageLimit();
+
+  // Форма демо
+  const demoForm = document.getElementById('demoForm');
+  if (demoForm) {
+    demoForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      if (checkUsageLimit()) {
+        showError(document.getElementById('errorMessage'), 'Ліміт демо досягнуто. Скористайтесь кнопкою «Скинути демо».');
+        return;
+      }
+
+      const fileInput = document.getElementById('dataFile');
+      const questionInput = document.getElementById('questionInput');
+      
+      const file = fileInput?.files[0];
+      const question = questionInput?.value || '';
+
+      await analyzeData(file, question);
+    });
+  }
+const fileInput = document.getElementById('dataFile');
+  const fileDrop = document.getElementById('fileDrop');
+  const fileBrowseBtn = document.getElementById('fileBrowseBtn');
+  const fileNameEl = document.getElementById('fileName');
+
+  function setFileName(f) {
+    if (!fileNameEl) return;
+    fileNameEl.textContent = f ? `${f.name} • ${(f.size/1024/1024).toFixed(2)} MB` : 'Файл не обрано';
+  }
+
+  if (fileBrowseBtn && fileInput) {
+    fileBrowseBtn.addEventListener('click', () => fileInput.click());
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener('change', () => {
+      const f = fileInput.files && fileInput.files[0];
+      setFileName(f);
+    });
+  }
+
+  if (fileDrop) {
+    // Перетаскивание
+    ['dragenter', 'dragover'].forEach(evt =>
+      fileDrop.addEventListener(evt, (e) => {
+        e.preventDefault(); e.stopPropagation();
+        fileDrop.classList.add('dragover');
+      })
+    );
+    ['dragleave', 'drop'].forEach(evt =>
+      fileDrop.addEventListener(evt, (e) => {
+        e.preventDefault(); e.stopPropagation();
+        fileDrop.classList.remove('dragover');
+      })
+    );
+    fileDrop.addEventListener('drop', (e) => {
+      const files = e.dataTransfer?.files;
+      if (files && files.length) {
+        fileInput.files = files; // подставляем в реальный input
+        setFileName(files[0]);
+      }
+    });
+  }
+  // Форма списку очікування
+  const waitlistForm = document.getElementById('waitlistForm');
+  if (waitlistForm) {
+    waitlistForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const firstName = document.getElementById('firstNameInput')?.value?.trim();
+      const lastName = document.getElementById('lastNameInput')?.value?.trim();
+      const email = document.getElementById('emailInput')?.value?.trim();
+      const company = document.getElementById('companyInput')?.value?.trim();
+      
+      const joinBtn = document.getElementById('joinBtn');
+      const successMsg = document.getElementById('waitlistSuccess');
+      const errorMsg = document.getElementById('waitlistError');
+
+      hideMessage(successMsg);
+      hideMessage(errorMsg);
+
+      if (!firstName) {
+        showError(errorMsg, 'Потрібно вказати ім’я');
+        return;
+      }
+      if (!lastName) {
+        showError(errorMsg, 'Потрібно вказати прізвище');
+        return;
+      }
+      if (!email || !email.includes('@')) {
+        showError(errorMsg, 'Потрібно вказати дійсну електронну пошту');
+        return;
+      }
+      if (!company) {
+        showError(errorMsg, 'Потрібно вказати назву компанії');
+        return;
+      }
+
+      if (joinBtn) {
+        joinBtn.disabled = true;
+        joinBtn.textContent = 'Приєднуємо...';
+      }
+
+      try {
+        await submitWaitlist({ firstName, lastName, email, company });
+        
+        showSuccess(successMsg, '✅ Ви у списку! Ми повідомимо, коли відкриється ранній доступ.');
+        waitlistForm.reset();
+        
+        if (joinBtn) joinBtn.textContent = 'Приєднано!';
+
+        if (typeof gtag === 'function') {
+          gtag('event', 'signup', {
+            event_category: 'waitlist',
+            event_label: 'datamind'
+          });
+        }
+
+      } catch (error) {
+        showError(errorMsg, error.message || 'Не вдалося надіслати. Спробуйте ще раз.');
+        
+        if (joinBtn) {
+          joinBtn.disabled = false;
+          joinBtn.textContent = 'Приєднатися до списку';
+        }
+      }
+    });
+  }
+
+  // Плавне прокручування
+  document.querySelectorAll('a[href^="#"]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = document.querySelector(link.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+});
+</script>
+</body>
+</html>

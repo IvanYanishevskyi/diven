@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Diven — AI-Powered Data Analysis · Transform Your Data Into Insights</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3"></script>
+  <link rel="stylesheet" href="styles.css">
+
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@1.3.0"></script>
+<script>
+(async () => {
+  try {
+    const res = await fetch("https://ipapi.co/json/");
+    const data = await res.json();
+    if (data.country_code === "UA") {
+      window.location.href = "/index.html";
+    }
+  } catch (e) {
+    console.warn("IP check failed:", e);
+  }
+})();
+</script>
+  <meta name="description" content="DataMind transforms your spreadsheets into actionable insights. Upload data, ask questions in plain English, get instant visualizations and analysis." />
+  
+</head>
+<body>
+  <!-- Reset demo button -->
+  <button class="reset-demo" onclick="localStorage.removeItem('DATAMIND_DEMO_USED'); location.reload();" title="Reset demo limit">Reset Demo</button>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <nav class="nav">
+        <div class="logo">
+          <span>Diven</span>
+        </div>
+        <div class="nav-links">
+          <a href="#features" class="nav-link">Features</a>
+          <a href="#demo" class="nav-link">Demo</a>
+          <a href="#waitlist" class="nav-link">Early Access</a>
+          <a href="#ua" class="nav-link lang-switch" data-lang="ua">UA</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-badge">
+        <div class="dot"></div>
+        Early Access Available
+      </div>
+      
+      <h1>Ask Your Data Anything.</h1>
+      
+      <p class="subtitle">
+        Transform spreadsheets into insights with AI. Upload your data, ask questions in plain English, 
+        and get instant visualizations and analysis.
+      </p>
+      
+      <div class="hero-cta">
+        <a href="#waitlist" class="btn btn-primary">
+          Get Early Access
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8.22 2.97a.75.75 0 0 1 1.06 0L14 7.69a.75.75 0 0 1 0 1.06L9.28 13.47a.75.75 0 0 1-1.06-1.06L11.94 8.5H2.75a.75.75 0 0 1 0-1.5h9.19L8.22 4.03a.75.75 0 0 1 0-1.06Z"/>
+          </svg>
+        </a>
+        <a href="#demo" class="btn btn-secondary">
+          Try Live Demo
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Demo Section -->
+  <section id="demo" class="demo-section">
+    <div class="container">
+      <div class="demo-card">
+        <div class="demo-header">
+          <div class="demo-title">
+            Live Demo
+            <div class="status-badge">1 Free Analysis</div>
+          </div>
+        </div>
+        
+        <p style="color: var(--muted); margin-bottom: 24px;">
+          Upload a CSV or XLSX file and ask a question about your data. Get instant insights and visualizations.
+        </p>
+        
+        <form class="demo-form" id="demoForm">
+          <div class="form-group" style="position: relative;">
+  <input type="file" accept=".csv,.xlsx,.xls" id="dataFile" class="visually-hidden-input" required>
+
+  <label for="dataFile" class="file-drop" id="fileDrop">
+    <div class="file-label">
+      <div class="file-title" id="fileLabel">Завантажте файл</div>
+    </div>
+    <button type="button" class="file-trigger" id="fileBrowseBtn">Обрати файл</button>
+  </label>
+</div>
+          <div class="form-group">
+            <input type="text" placeholder="e.g., Show top 5 products by revenue as a bar chart" class="form-input" id="questionInput" required>
+          </div>
+          <button type="submit" class="btn btn-primary" id="analyzeBtn">
+            Analyze Data
+          </button>
+        </form>
+        
+        <div class="demo-example">
+          Try asking: <code>Compare monthly sales by region in 2024</code> or <code>Show customer segments by revenue (pie chart)</code>
+        </div>
+        
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+        <div id="successMessage" class="success-message" style="display: none;"></div>
+        
+        <div class="results" id="resultsContainer">
+          <!-- ЛЕВАЯ ПАНЕЛЬ -->
+          <div class="result-panel">
+            <div class="result-title">Summary</div>
+
+            <div class="kpi-grid" id="kpiGrid"></div>
+            <div class="mini-sep"></div>
+
+            <div class="mini-meta">
+              <div><span class="mini-label">Question:</span> <span id="sumQuestion">—</span></div>
+              <div><span class="mini-label">Dataset:</span> <span id="sumDataset">—</span></div>
+            </div>
+
+            <div class="mini-sep"></div>
+
+            <div class="highlights">
+              <div class="hl-title">Highlights</div>
+              <ul id="hlList" class="hl-list"></ul>
+            </div>
+
+            <details style="margin-top:16px;">
+              <summary style="cursor:pointer; color: var(--accent);">Technical Details</summary>
+              <div class="result-title" style="margin-top: 12px; font-size: 14px;">Generated Code:</div>
+              <div class="code-block" id="generatedCode"></div>
+              <div class="result-title" style="font-size: 14px;">Analysis:</div>
+              <div class="code-block" id="explanation"></div>
+            </details>
+          </div>
+
+          <!-- ПРАВАЯ ПАНЕЛЬ -->
+          <div class="result-panel">
+            <div class="result-title">Visualization</div>
+            <div class="chart-container">
+              <div class="chart-wrap">
+                <canvas id="chartCanvas"></canvas>
+                <img id="chartImage" class="chart-image" alt="Generated chart" style="display:none;">
+                <div id="chartPlaceholder" style="color: var(--muted); display: none;">Chart will appear here</div>
+              </div>
+            </div>
+
+            <div class="vis-toolbar">
+              <button class="btn btn-secondary btn-sm" id="btnDownload">Save PNG</button>
+              <button class="btn btn-secondary btn-sm" id="btnType">Switch Type</button>
+            </div>
+            <div class="usage-indicator" id="usageStatus"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="features">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Powerful AI Analysis</h2>
+        <p class="section-subtitle">
+          Turn complex data analysis into simple conversations. No SQL, no complex formulas—just natural language.
+        </p>
+      </div>
+      
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🧠</div>
+          <h3 class="feature-title">Natural Language Processing</h3>
+          <p class="feature-description">
+            Ask questions in plain English. Our AI understands context, relationships, and intent to deliver precise analysis.
+          </p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3 class="feature-title">Instant Visualizations</h3>
+          <p class="feature-description">
+            Generate beautiful charts and graphs automatically. Bar charts, line graphs, pie charts, and histograms—all optimized for your data.
+          </p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">🔒</div>
+          <h3 class="feature-title">Secure & Private</h3>
+          <p class="feature-description">
+            Your data is processed securely without permanent storage. Local processing mode coming soon for maximum privacy.
+          </p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3 class="feature-title">Lightning Fast</h3>
+          <p class="feature-description">
+            Get insights in seconds, not hours. Our optimized analysis engine processes data and generates results instantly.
+          </p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">🎯</div>
+          <h3 class="feature-title">Smart Insights</h3>
+          <p class="feature-description">
+            Discover patterns, trends, and anomalies automatically. Get actionable insights that drive better decisions.
+          </p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">📤</div>
+          <h3 class="feature-title">Export Everything</h3>
+          <p class="feature-description">
+            Download charts as PNG, export results as CSV, or generate PDF reports. Your insights, your format.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Waitlist Section -->
+  <section id="waitlist">
+    <div class="container">
+      <div class="waitlist">
+        <h3>Get Early Access</h3>
+        <p>Be among the first to experience the future of data analysis. Join our waitlist for exclusive early access.</p>
+        
+        <form class="waitlist-form" id="waitlistForm">
+          <div class="form-group">
+            <input type="text" placeholder="First Name" class="form-input" id="firstNameInput" required>
+          </div>
+          <div class="form-group">
+            <input type="text" placeholder="Last Name" class="form-input" id="lastNameInput" required>
+          </div>
+          <div class="form-group form-row-full">
+            <input type="email" placeholder="Email Address" class="form-input" id="emailInput" required>
+          </div>
+          <div class="form-group form-row-full">
+            <input type="text" placeholder="Message (Optional)" class="form-input" id="companyInput" >
+          </div>
+          <div class="form-row-full submit-row">
+            <button type="submit" class="btn btn-primary submit-btn" id="joinBtn">Join Waitlist</button>
+          </div>
+          
+          <!-- Honeypot -->
+          <input type="text" name="_hp" class="sr-only" tabindex="-1" autocomplete="off">
+        </form>
+        
+        <div id="waitlistSuccess" class="success-message" style="display: none; margin-top: 16px;">
+          ✅ You're on the list! We'll notify you when early access opens.
+        </div>
+        <div id="waitlistError" class="error-message" style="display: none; margin-top: 16px;"></div>
+        
+        <p style="font-size: 14px; color: var(--muted); margin-top: 24px;">
+          Only important updates about the beta. Unsubscribe anytime.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2025 DataMind • <a href="mailto:hello@datamind.ai">hello@datamind.ai</a></p>
+    </div>
+  </footer>
+
+<script>
+const FORMSPREE_ENDPOINT = "https://formspree.io/f/mqadkgnp";
+const API_BASE = localStorage.getItem('DATAMIND_API') || ' https://stickers-up-hydrocodone-runs.trycloudflare.com';
+const USAGE_KEY = "DATAMIND_DEMO_USED";
+
+let currentChart = null;
+let currentData = null;
+
+// Регистрируем плагин
+if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
+  Chart.register(ChartDataLabels);
+}
+
+// Утилиты
+function showError(element, message) {
+  if (element) {
+    element.textContent = message;
+    element.style.display = 'block';
+  }
+}
+
+function showSuccess(element, message) {
+  if (element) {
+    element.textContent = message;
+    element.style.display = 'block';
+  }
+}
+
+function hideMessage(element) {
+  if (element) element.style.display = 'none';
+}
+
+// Рендеринг чарта
+function renderChart(cfg) {
+  const ctx = document.getElementById('chartCanvas').getContext('2d');
+  const chartImg = document.getElementById('chartImage');
+  chartImg.style.display = 'none';
+
+  if (_chart) _chart.destroy();
+
+  const isPie = (cfg.type === 'pie' || cfg.type === 'doughnut');
+  const isHeatmap = cfg.type === 'heatmap';
+  const plugins = [ChartDataLabels];
+
+  // Если нужно построить heatmap
+  if (isHeatmap) {
+    _chart = new Chart(ctx, {
+      type: 'matrix',
+      data: {
+        datasets: [{
+          label: cfg.title || 'Heatmap',
+          data: cfg.data, // [{x, y, v}]
+          backgroundColor: ctx => {
+            const value = ctx.dataset.data[ctx.dataIndex].v;
+            const max = cfg.maxValue || 1;
+            const alpha = Math.min(1, value / max);
+            return `rgba(59, 130, 246, ${alpha})`;
+          },
+          width: ({chart}) => (chart.chartArea.width / cfg.xLabels.length) - 2,
+          height: ({chart}) => (chart.chartArea.height / cfg.yLabels.length) - 2,
+          borderWidth: 1,
+          borderColor: '#222'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: ctx => `Month: ${cfg.xLabels[ctx[0].dataIndex % cfg.xLabels.length]}`,
+              label: ctx => `Revenue: ${ctx.dataset.data[ctx.dataIndex].v.toFixed(2)}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            labels: cfg.xLabels,
+            offset: true,
+            grid: { display: false },
+            ticks: { color: '#ccc', font: { size: 12 } }
+          },
+          y: {
+            labels: cfg.yLabels,
+            offset: true,
+            grid: { display: false },
+            ticks: { color: '#ccc', font: { size: 12 } }
+          }
+        }
+      }
+    });
+    return;
+  }
+
+  // Остальные графики (bar, pie, line)
+  _chart = new Chart(ctx, {
+    type: cfg.type || 'bar',
+    data: {
+      labels: cfg.labels || [],
+      datasets: (cfg.datasets || []).map(ds => ({
+        ...ds,
+        borderWidth: 1
+      }))
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 12 } },
+        title: { display: !!cfg.title, text: cfg.title },
+        datalabels: isPie ? {
+          formatter: (v, ctx) => {
+            const ds = ctx.chart.data.datasets[0];
+            const sum = ds.data.reduce((a, b) => a + b, 0) || 1;
+            const pct = Math.round((v / sum) * 100);
+            return pct >= 5 ? pct + '%' : '';
+          },
+          anchor: 'center',
+          align: 'center'
+        } : { display: false }
+      },
+      scales: isPie ? {} : {
+        x: { grid: { color: 'rgba(255,255,255,0.06)' } },
+        y: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { beginAtZero: true } }
+      }
+    },
+    plugins
+  });
+}
+
+function showChartFallback() {
+  const canvas = document.getElementById('chartCanvas');
+  const chartImage = document.getElementById('chartImage');
+  const placeholder = document.getElementById('chartPlaceholder');
+
+  if (canvas) canvas.style.display = 'none';
+  
+  if (currentData && currentData.chart_png_base64 && chartImage) {
+    chartImage.src = `data:image/png;base64,${currentData.chart_png_base64}`;
+    chartImage.style.display = 'block';
+    if (placeholder) placeholder.style.display = 'none';
+  } else if (placeholder) {
+    placeholder.style.display = 'block';
+    if (chartImage) chartImage.style.display = 'none';
+  }
+}
+
+function setupChartButtons(config) {
+  const downloadBtn = document.getElementById('btnDownload');
+  const typeBtn = document.getElementById('btnType');
+
+  if (downloadBtn) {
+    downloadBtn.onclick = () => {
+      if (currentChart) {
+        const url = currentChart.toBase64Image('image/png', 1.0);
+        const link = document.createElement('a');
+        link.download = `${config.title || 'chart'}.png`;
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else if (currentData && currentData.chart_png_base64) {
+        const link = document.createElement('a');
+        link.download = 'chart.png';
+        link.href = `data:image/png;base64,${currentData.chart_png_base64}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    };
+  }
+
+  if (typeBtn) {
+    typeBtn.onclick = () => {
+      if (!currentChart) return;
+      
+      const currentType = currentChart.config.type;
+      const newType = currentType === 'bar' ? 'pie' : 'bar';
+      
+      currentChart.config.type = newType;
+      
+      const isPie = newType === 'pie' || newType === 'doughnut';
+      currentChart.options.plugins.datalabels.display = isPie;
+      currentChart.options.scales = isPie ? {} : {
+        x: {
+          ticks: { color: '#94a3b8' },
+          grid: { color: 'rgba(255, 255, 255, 0.1)' }
+        },
+        y: {
+          ticks: { color: '#94a3b8', beginAtZero: true },
+          grid: { color: 'rgba(255, 255, 255, 0.1)' }
+        }
+      };
+      
+      currentChart.update();
+    };
+  }
+}
+
+// Отображение результатов
+function displayResults(data) {
+  currentData = data;
+
+  const sumQuestion = document.getElementById('sumQuestion');
+  const sumDataset = document.getElementById('sumDataset');
+  
+  if (sumQuestion) sumQuestion.textContent = data.question || 'Not specified';
+  if (sumDataset) {
+    const rows = data.summary?.dataset?.rows || data.rows || '?';
+    const cols = data.summary?.dataset?.cols_count || data.cols?.length || '?';
+    sumDataset.textContent = `${rows} rows • ${cols} columns`;
+  }
+
+  // KPIs
+  const kpiGrid = document.getElementById('kpiGrid');
+  if (kpiGrid) {
+    kpiGrid.innerHTML = '';
+    const kpis = data.summary?.kpis || [];
+    
+    if (kpis.length > 0) {
+      kpis.forEach(kpi => {
+        const kpiEl = document.createElement('div');
+        kpiEl.className = 'kpi-card';
+        kpiEl.innerHTML = `
+          <div class="kpi-label">${kpi.label || 'Metric'}</div>
+          <div class="kpi-value">${kpi.value || 'N/A'}</div>
+          ${kpi.sub ? `<div class="kpi-sub">${kpi.sub}</div>` : ''}
+        `;
+        kpiGrid.appendChild(kpiEl);
+      });
+    } else {
+      const kpiEl = document.createElement('div');
+      kpiEl.className = 'kpi-card';
+      kpiEl.innerHTML = `
+        <div class="kpi-label">Status</div>
+        <div class="kpi-value">Complete</div>
+        <div class="kpi-sub">Analysis finished</div>
+      `;
+      kpiGrid.appendChild(kpiEl);
+    }
+  }
+
+  // Highlights
+  const hlList = document.getElementById('hlList');
+  if (hlList) {
+    hlList.innerHTML = '';
+    const highlights = data.summary?.highlights || [];
+    
+    if (highlights.length > 0) {
+      highlights.forEach(highlight => {
+        const li = document.createElement('li');
+        li.textContent = highlight;
+        hlList.appendChild(li);
+      });
+    } else {
+      const li = document.createElement('li');
+      li.textContent = 'Analysis completed successfully';
+      hlList.appendChild(li);
+    }
+  }
+
+  // Code & explanation
+  const generatedCode = document.getElementById('generatedCode');
+  const explanation = document.getElementById('explanation');
+  
+  if (generatedCode) {
+    generatedCode.textContent = data.pandas_code || '# No code generated';
+  }
+  
+  if (explanation) {
+    const explanationText = [
+      data.intent ? `Intent: ${data.intent}` : '',
+      data.reasoning ? `Reasoning: ${data.reasoning}` : '',
+      data.answer_hint ? `Insights: ${data.answer_hint}` : ''
+    ].filter(Boolean).join('\n\n') || 'Analysis completed';
+    
+    explanation.textContent = explanationText;
+  }
+
+  // Рендерим чарт
+  if (data.chart_js && data.chart_js.labels && data.chart_js.datasets) {
+    renderChart({
+      type: data.chart_js.type || 'bar',
+      labels: data.chart_js.labels,
+      datasets: data.chart_js.datasets,
+      title: data.chart_js.title || data.intent || 'Data Visualization'
+    });
+  } else if (data.chart_png_base64) {
+    showChartFallback();
+  }
+
+  // Показываем результаты
+  const resultsContainer = document.getElementById('resultsContainer');
+  if (resultsContainer) {
+    resultsContainer.style.display = 'grid';
+  }
+}
+
+// Проверка лимита использования
+function checkUsageLimit() {
+  if (localStorage.getItem(USAGE_KEY) === "1") {
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const usageStatus = document.getElementById('usageStatus');
+    
+    if (analyzeBtn) {
+      analyzeBtn.disabled = true;
+      analyzeBtn.textContent = "Demo Used";
+    }
+    
+    if (usageStatus) {
+      usageStatus.textContent = "Demo limit reached (1/1). Use Reset Demo button.";
+    }
+    
+    return true;
+  }
+  return false;
+}
+
+// API вызов
+async function callAnalyzeAPI(file, question) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('question', question);
+
+  const response = await fetch(`${API_BASE}/analyze`, {
+    method: 'POST',
+    body: formData
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => 'Unknown error');
+    throw new Error(`API Error (${response.status}): ${errorText}`);
+  }
+
+  const data = await response.json();
+
+  if (data.ok === false) {
+    throw new Error(data.error || 'Analysis failed');
+  }
+
+  return data;
+}
+
+// Анализ данных
+async function analyzeData(file, question) {
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  const errorMsg = document.getElementById('errorMessage');
+  const successMsg = document.getElementById('successMessage');
+
+  hideMessage(errorMsg);
+  hideMessage(successMsg);
+
+  if (!file) {
+    showError(errorMsg, 'Please select a file');
+    return;
+  }
+
+  if (!question.trim()) {
+    showError(errorMsg, 'Please enter a question');
+    return;
+  }
+
+  if (analyzeBtn) {
+    analyzeBtn.disabled = true;
+    analyzeBtn.textContent = 'Analyzing...';
+  }
+
+  try {
+    const data = await callAnalyzeAPI(file, question.trim());
+    
+    displayResults(data);
+    showSuccess(successMsg, 'Analysis completed successfully!');
+    
+    localStorage.setItem(USAGE_KEY, "1");
+    const usageStatus = document.getElementById('usageStatus');
+    if (usageStatus) {
+      usageStatus.textContent = "Demo used (1/1). Use Reset Demo button to try again.";
+    }
+
+  } catch (error) {
+    showError(errorMsg, error.message || 'Analysis failed. Please try again.');
+    
+    if (analyzeBtn) {
+      analyzeBtn.disabled = false;
+      analyzeBtn.textContent = 'Analyze Data';
+    }
+  }
+}
+
+// Waitlist submission
+async function submitWaitlist(formData) {
+  const form = new FormData();
+  Object.entries(formData).forEach(([key, value]) => {
+    form.append(key, value);
+  });
+  form.append('timestamp', new Date().toISOString());
+  form.append('source', 'datamind_landing');
+
+  const response = await fetch(FORMSPREE_ENDPOINT, {
+    method: 'POST',
+    body: form,
+    headers: { 'Accept': 'application/json' }
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `Submission failed (${response.status})`);
+  }
+
+  return response.json();
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+  // Проверяем лимит использования
+  checkUsageLimit();
+
+  // Demo form
+  const demoForm = document.getElementById('demoForm');
+  if (demoForm) {
+    demoForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      if (checkUsageLimit()) {
+        showError(document.getElementById('errorMessage'), 'Demo limit reached. Use Reset Demo button.');
+        return;
+      }
+
+      const fileInput = document.getElementById('dataFile');
+      const questionInput = document.getElementById('questionInput');
+      
+      const file = fileInput?.files[0];
+      const question = questionInput?.value || '';
+
+      await analyzeData(file, question);
+    });
+  }
+
+  // Waitlist form
+  const waitlistForm = document.getElementById('waitlistForm');
+  if (waitlistForm) {
+    waitlistForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const firstName = document.getElementById('firstNameInput')?.value?.trim();
+      const lastName = document.getElementById('lastNameInput')?.value?.trim();
+      const email = document.getElementById('emailInput')?.value?.trim();
+      const company = document.getElementById('companyInput')?.value?.trim();
+      
+      const joinBtn = document.getElementById('joinBtn');
+      const successMsg = document.getElementById('waitlistSuccess');
+      const errorMsg = document.getElementById('waitlistError');
+
+      hideMessage(successMsg);
+      hideMessage(errorMsg);
+
+      if (!firstName) {
+        showError(errorMsg, 'First name is required');
+        return;
+      }
+      if (!lastName) {
+        showError(errorMsg, 'Last name is required');
+        return;
+      }
+      if (!email || !email.includes('@')) {
+        showError(errorMsg, 'Valid email is required');
+        return;
+      }
+      if (!company) {
+        showError(errorMsg, 'Company name is required');
+        return;
+      }
+
+      if (joinBtn) {
+        joinBtn.disabled = true;
+        joinBtn.textContent = 'Joining...';
+      }
+
+      try {
+        await submitWaitlist({ firstName, lastName, email, company });
+        
+        showSuccess(successMsg, '✅ You\'re on the list! We\'ll notify you when early access opens.');
+        waitlistForm.reset();
+        
+        if (joinBtn) joinBtn.textContent = 'Joined!';
+
+        if (typeof gtag === 'function') {
+          gtag('event', 'signup', {
+            event_category: 'waitlist',
+            event_label: 'datamind'
+          });
+        }
+
+      } catch (error) {
+        showError(errorMsg, error.message || 'Submission failed. Please try again.');
+        
+        if (joinBtn) {
+          joinBtn.disabled = false;
+          joinBtn.textContent = 'Join Waitlist';
+        }
+      }
+    });
+  }
+
+  // Smooth scroll
+  document.querySelectorAll('a[href^="#"]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = document.querySelector(link.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const langLinks = document.querySelectorAll(".lang-switch");
+
+  langLinks.forEach(link => {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+
+      const lang = link.dataset.lang; // "ua" или "en"
+      
+      // Сохраняем выбранный язык в localStorage
+      localStorage.setItem("langOverride", lang);
+
+      // Перенаправляем на нужную страницу
+      if (lang === "ua") {
+        window.location.href = "/index.html";
+      } else {
+        window.location.href = "/index_eng.html";
+      }
+    });
+  });
+});
+</script>
+</body>
+</html>
